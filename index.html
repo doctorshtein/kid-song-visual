@@ -30,29 +30,33 @@ document.getElementById('generateBtn').addEventListener('click',()=>{
   result.innerHTML='';
   if(!text) return;
   const lines = text.split(/\n+/);
-  lines.forEach((line)=>{
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+  const noteW=50, noteH=50, barW=10, margin=10;
+  const lineHeight = noteH + margin*2;
+  const lineData = lines.map(line=>{
     const elements = parseLine(line);
-    const noteW=50, noteH=50, barW=10, margin=10;
-    const height = noteH + margin*2;
     let width = margin;
-    elements.forEach(el=>{width += (el.type==='bar'?barW:noteW);});
+    elements.forEach(el=>{ width += (el.type==='bar'?barW:noteW); });
     width += margin;
-    canvas.width = width;
-    canvas.height = height;
+    return {elements, width};
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(...lineData.map(l=>l.width));
+  canvas.height = lineHeight * lineData.length;
+  const ctx = canvas.getContext('2d');
+  lineData.forEach((line, idx)=>{
     let x = margin;
-    elements.forEach(el=>{
+    const yOffset = idx * lineHeight;
+    line.elements.forEach(el=>{
       if(el.type==='bar') {
         ctx.fillStyle='#000';
-        ctx.fillRect(x + barW/2 -1, margin/2, 2, noteH + margin);
+        ctx.fillRect(x + barW/2 -1, yOffset + margin/2, 2, noteH + margin);
         x+=barW;
       } else {
         if(!el.rest){
           const num = el.number;
           ctx.fillStyle = noteColors[num];
           const cx = x + noteW/2;
-          const cy = margin + noteH/2;
+          const cy = yOffset + margin + noteH/2;
           const radius = noteW/2 -5;
           ctx.beginPath();
           ctx.arc(cx, cy, radius, 0, Math.PI*2);
@@ -66,19 +70,18 @@ document.getElementById('generateBtn').addEventListener('click',()=>{
         x+=noteW;
       }
     });
-    result.appendChild(canvas);
   });
+  result.appendChild(canvas);
   document.getElementById('downloadBtn').style.display='inline-block';
 });
 
 document.getElementById('downloadBtn').addEventListener('click',()=>{
-  const canvases=document.querySelectorAll('#result canvas');
-  canvases.forEach((canvas,idx)=>{
-    const link=document.createElement('a');
-    link.download='line_'+(idx+1)+'.png';
-    link.href=canvas.toDataURL('image/png');
-    link.click();
-  });
+  const canvas=document.querySelector('#result canvas');
+  if(!canvas) return;
+  const link=document.createElement('a');
+  link.download='notation.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
 });
 
 function parseLine(line){
