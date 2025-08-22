@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kid-friendly Music Notation Generator</title>
+<style>
+ body {font-family: Arial, sans-serif; padding:20px;}
+ textarea {width:100%; height:120px;}
+ canvas {border:1px solid #ccc; margin-top:10px; display:block;}
+ .controls {margin-top:10px;}
+</style>
+</head>
+<body>
+<h1>Kid-friendly Music Notation Generator</h1>
+<p>Enter notes using letters a–g. Use underscores (_) for pauses and spaces to separate groups.<br>
+Example line: <code>cc gg a+1a+1 g_</code></p>
+<textarea id="inputArea" placeholder="Enter notes..."></textarea>
+<div class="controls">
+<button id="generateBtn">Generate</button>
+<button id="downloadBtn" style="display:none">Download image</button>
+</div>
+<div id="result"></div>
+<script>
+const noteColors = {1:'#f44336',2:'#ff9800',3:'#ffeb3b',4:'#4caf50',5:'#2196f3',6:'#3f51b5',7:'#9c27b0'};
+const noteMap = {c:1,d:2,e:3,f:4,g:5,a:6,b:7};
+
+document.getElementById('generateBtn').addEventListener('click',()=>{
+  const text = document.getElementById('inputArea').value.trim();
+  const result = document.getElementById('result');
+  result.innerHTML='';
+  if(!text) return;
+  const lines = text.split(/\n+/);
+  lines.forEach((line)=>{
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const elements = parseLine(line);
+    const noteW=50, noteH=50, barW=10, margin=10;
+    const height = noteH + margin*2;
+    let width = margin;
+    elements.forEach(el=>{width += (el.type==='bar'?barW:noteW);});
+    width += margin;
+    canvas.width = width;
+    canvas.height = height;
+    let x = margin;
+    elements.forEach(el=>{
+      if(el.type==='bar') {
+        ctx.fillStyle='#000';
+        ctx.fillRect(x + barW/2 -1, margin/2, 2, noteH + margin);
+        x+=barW;
+      } else {
+        if(!el.rest){
+          const num = el.number;
+          ctx.fillStyle = noteColors[num];
+          const cx = x + noteW/2;
+          const cy = margin + noteH/2;
+          const radius = noteW/2 -5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle='#000';
+          ctx.font='bold 24px sans-serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(num, cx, cy);
+        }
+        x+=noteW;
+      }
+    });
+    result.appendChild(canvas);
+  });
+  document.getElementById('downloadBtn').style.display='inline-block';
+});
+
+document.getElementById('downloadBtn').addEventListener('click',()=>{
+  const canvases=document.querySelectorAll('#result canvas');
+  canvases.forEach((canvas,idx)=>{
+    const link=document.createElement('a');
+    link.download='line_'+(idx+1)+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  });
+});
+
+function parseLine(line){
+  const groups = line.trim().split(/\s+/);
+  const elements = [];
+  groups.forEach((group,index)=>{
+    if(index>0) elements.push({type:'bar'});
+    const tokens = group.match(/[a-g](?:[+-]\d)?|_/gi) || [];
+    tokens.forEach(tok=>{
+      if(tok==='_') elements.push({type:'note',rest:true});
+      else elements.push({type:'note',number:noteMap[tok[0].toLowerCase()]});
+    });
+  });
+  return elements;
+}
+</script>
+</body>
+</html>
