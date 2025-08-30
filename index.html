@@ -1,102 +1,413 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Kid-friendly Music Notation Generator</title>
-<style>
- body {font-family: Arial, sans-serif; padding:20px;}
- textarea {width:100%; height:120px;}
- canvas {border:1px solid #ccc; margin-top:10px; display:block;}
- .controls {margin-top:10px;}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kid‑Friendly Music Notation Generator</title>
+  <style>
+    :root{
+      --bg:#0b0b10; --panel:#12121a; --ink:#e6e6ef; --muted:#a6a6b5; --accent:#6ea8fe;
+      --border:#232334; --good:#2ecc71; --warn:#f1c40f; --danger:#e74c3c;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--ink); background:linear-gradient(180deg,#0a0a12 0%,#0f0f18 100%);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell,
+                   Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    header{padding:18px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; backdrop-filter:saturate(140%) blur(6px); background:rgba(10,10,18,0.6);}
+    header h1{margin:0; font-size:20px; letter-spacing:.2px}
+    main{display:grid; grid-template-columns: 380px 1fr; gap:20px; padding:20px; align-items:start}
+    .card{background:var(--panel); border:1px solid var(--border); border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .left{padding:16px}
+    .left h2{margin:0 0 8px 0; font-size:16px}
+    textarea{width:100%; min-height:180px; background:#0e0e16; color:var(--ink); border:1px solid var(--border); border-radius:12px; padding:12px; resize:vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .row{display:grid; grid-template-columns: 1fr 110px; gap:10px; align-items:center}
+    .controls{display:grid; gap:10px; margin-top:12px}
+    .controls label{display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:13px; color:var(--muted)}
+    .controls input[type="number"], .controls input[type="text"], .controls select {
+      width:110px; padding:6px 8px; border:1px solid var(--border); border-radius:10px; background:#0e0e16; color:var(--ink);
+    }
+    .controls input[type="range"]{width:100%}
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    button{
+      background:linear-gradient(180deg,#1a84ff,#1463cc);
+      color:white; border:0; padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 20px rgba(30,100,210,.35);
+    }
+    button.secondary{background:#202033; box-shadow:none; border:1px solid var(--border)}
+    button:disabled{opacity:.6; cursor:not-allowed}
+    .preview{padding:12px; overflow:auto; max-height:78vh}
+    .legend{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .chip{display:flex; align-items:center; gap:6px; padding:6px 8px; border:1px solid var(--border); border-radius:999px; font-size:12px; color:var(--muted)}
+    .dot{width:14px; height:14px; border-radius:50%}
+
+    @media print {
+      header, .left { display:none !important; }
+      main{grid-template-columns: 1fr; padding:0}
+      .preview{max-height:none; overflow:visible}
+      body{background:white}
+      .card{border:none; box-shadow:none}
+    }
+  </style>
+  <!-- add a dependency to a script https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.4/svg.min.js-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.4/svg.min.js"></script>
 </head>
 <body>
-<h1>Kid-friendly Music Notation Generator</h1>
-<p>Enter notes using letters a–g. Use underscores (_) for pauses and spaces to separate groups.<br>
-Example line: <code>cc gg a+1a+1 g_</code></p>
-<textarea id="inputArea" placeholder="Enter notes..."></textarea>
-<div class="controls">
-<button id="generateBtn">Generate</button>
-<button id="downloadBtn" style="display:none">Download image</button>
-</div>
-<div id="result"></div>
-<script>
-const noteColors = {1:'#f44336',2:'#ff9800',3:'#ffeb3b',4:'#4caf50',5:'#2196f3',6:'#3f51b5',7:'#9c27b0'};
-const noteMap = {c:1,d:2,e:3,f:4,g:5,a:6,b:7};
+  <header>
+    <h1>🎵 Kid‑Friendly Music Notation Generator (Pure Client‑Side)</h1>
+  </header>
+  <main>
+    <section class="left card">
+      <h2>Song input</h2>
+      <p style="color:var(--muted); font-size:13px; margin:6px 0 10px">Each line → one staff row. Separate groups with spaces (adds vertical bars). Notes: <strong>a–g</strong>, optional octave like <strong>a+1</strong> or <strong>e-1</strong>. Use <strong>_</strong> for a rest. Example shown below.</p>
+      <textarea id="input"></textarea>
 
-document.getElementById('generateBtn').addEventListener('click',()=>{
-  const text = document.getElementById('inputArea').value.trim();
-  const result = document.getElementById('result');
-  result.innerHTML='';
-  if(!text) return;
-  const lines = text.split(/\n+/);
-  const noteW=50, noteH=50, barW=10, margin=10;
-  const lineHeight = noteH + margin*2;
-  const lineData = lines.map(line=>{
-    const elements = parseLine(line);
-    let width = margin;
-    elements.forEach(el=>{ width += (el.type==='bar'?barW:noteW); });
-    width += margin;
-    return {elements, width};
-  });
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(...lineData.map(l=>l.width));
-  canvas.height = lineHeight * lineData.length;
-  const ctx = canvas.getContext('2d');
-  lineData.forEach((line, idx)=>{
-    let x = margin;
-    const yOffset = idx * lineHeight;
-    line.elements.forEach(el=>{
-      if(el.type==='bar') {
-        ctx.fillStyle='#000';
-        ctx.fillRect(x + barW/2 -1, yOffset + margin/2, 2, noteH + margin);
-        x+=barW;
-      } else {
-        if(!el.rest){
-          const num = el.number;
-          ctx.fillStyle = noteColors[num];
-          const cx = x + noteW/2;
-          const cy = yOffset + margin + noteH/2;
-          const radius = noteW/2 -5;
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius, 0, Math.PI*2);
-          ctx.fill();
-          ctx.fillStyle='#000';
-          ctx.font='bold 24px sans-serif';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(num, cx, cy);
+      <div class="controls">
+        <h2 style="margin-top:10px">Layout & Style</h2>
+        <label>Note spacing (px)
+          <input type="number" id="noteSpacing" value="64" min="28" max="160" step="2" />
+        </label>
+        <label>Note radius (px)
+          <input type="number" id="noteRadius" value="16" min="8" max="36" />
+        </label>
+        <label>Background circle scale ×
+          <input type="number" id="bgScale" value="2" min="1" max="3" step="0.1" />
+        </label>
+        <label>Row height (px)
+          <input type="number" id="rowH" value="120" min="80" max="220" />
+        </label>
+        <label>Margins (px)
+          <input type="number" id="marg" value="32" min="0" max="120" />
+        </label>
+        <label>Stroke width (px)
+          <input type="number" id="strokeW" value="2" min="1" max="6" />
+        </label>
+        <label>Font
+          <select id="fontSel">
+            <option value="system-ui,Segoe UI,Roboto,Arial">System UI</option>
+            <option value="'Gill Sans', 'Trebuchet MS', system-ui">Humanist</option>
+            <option value="'Comic Sans MS', 'Comic Sans', system-ui">Comic Sans (fun)</option>
+            <option value="'Times New Roman', Times, serif">Times</option>
+            <option value="'Courier New', Courier, monospace">Monospace</option>
+          </select>
+        </label>
+        <label><span>Show numbers above</span>
+          <input type="checkbox" id="showNumbers" checked />
+        </label>
+        <label><span>Show letters in circles</span>
+          <input type="checkbox" id="showLetters" checked />
+        </label>
+        <label><span>Show color backgrounds</span>
+          <input type="checkbox" id="showBg" checked />
+        </label>
+        <label title="Adds a tiny superscript ± for octave offsets like a+1 or e-1"><span>Show octave marks (±)</span>
+          <input type="checkbox" id="showOctaves" />
+        </label>
+        <div class="row">
+          <label style="grid-column:1/-1">Export scale (for PNG)</label>
+          <input type="range" id="exportScale" min="1" max="4" step="1" value="2" />
+        </div>
+        
+        <div class="btns">
+          <button id="renderBtn">Render</button>
+          <button id="pngBtn" class="secondary">Export PNG</button>
+          <button id="svgBtn" class="secondary">Export SVG</button>
+          <button id="printBtn" class="secondary">Print</button>
+        </div>
+      </div>
+
+      <div class="legend" id="legend"></div>
+
+      <details style="margin-top:12px; color:var(--muted)">
+        <summary>Input cheatsheet</summary>
+        <ul>
+          <li><code>c d e f g a b</code> → notes (case‑insensitive)</li>
+          <li><code>_</code> → rest</li>
+          <li><code>a+1</code>, <code>e-1</code> → octave offsets (optional)</li>
+          <li>Spaces split groups → vertical bar between groups</li>
+          <li>Concatenate notes inside a group: <code>cc</code>, <code>a+1a+1</code></li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="card preview">
+      <div id="previewBox"></div>
+    </section>
+  </main>
+
+  <script>
+    // Color palette (roughly Boomwhacker-inspired, tuned for contrast)
+    const NOTE_COLORS = {
+      c: '#e74c3c', // red
+      d: '#e67e22', // orange
+      e: '#f1c40f', // yellow
+      f: '#2ecc71', // green
+      g: '#3498db', // blue
+      a: '#9b59b6', // purple
+      b: '#e91e63'  // pink/magenta
+    };
+
+    const NOTE_POSITIONS = {
+      'a': 7,
+      'b': 6.5,
+      'c': 6,
+      'd': 5.5,
+      'e': 5,
+      'f': 4.5,
+      'g': 4,
+      'a+1': 3.5,
+      'b+1': 3,
+      'c+1': 2.5,
+      'd+1': 2,
+      'e+1': 1.5,
+      'f+1': 1,
+      'g+1': 0.5,
+      'a+2': 0,
+    };
+
+    const DEGREE_MAP = { c: '1', d: '2', e: '3', f: '4', g: '5', a: '6', b: '7' };
+
+    const els = {
+      input: document.getElementById('input'),
+      spacing: document.getElementById('noteSpacing'),
+      radius: document.getElementById('noteRadius'),
+      bgScale: document.getElementById('bgScale'),
+      rowH: document.getElementById('rowH'),
+      marg: document.getElementById('marg'),
+      strokeW: document.getElementById('strokeW'),
+      fontSel: document.getElementById('fontSel'),
+      showNumbers: document.getElementById('showNumbers'),
+      showLetters: document.getElementById('showLetters'),
+      showBg: document.getElementById('showBg'),
+      showOctaves: document.getElementById('showOctaves'),
+      renderBtn: document.getElementById('renderBtn'),
+      pngBtn: document.getElementById('pngBtn'),
+      svgBtn: document.getElementById('svgBtn'),
+      printBtn: document.getElementById('printBtn'),
+      exportScale: document.getElementById('exportScale'),
+      preview: document.getElementById('previewBox'),
+      legend: document.getElementById('legend')
+    };
+
+    function setExample(){
+      els.input.value = `cc|gg|a+1a+1|g_\nff|ee|dd|c_`;
+    }
+
+    function buildLegend(){
+      els.legend.innerHTML = '';
+      Object.entries(NOTE_COLORS).forEach(([k,v])=>{
+        const chip = document.createElement('div'); chip.className='chip';
+        const dot = document.createElement('span'); dot.className='dot'; dot.style.background=v;
+        chip.appendChild(dot); chip.appendChild(document.createTextNode(' ' + k.toUpperCase()));
+        els.legend.appendChild(chip);
+      });
+    }
+
+    function parseInput(text){
+      // Returns array of lines; each line is array of groups; each group is array of events {type:'note'|'rest', letter?, octave?}
+      const lines = [];
+      const rawLines = text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0);
+      const tokenRe = /([a-gA-G](?:[+-]\d+)?|_)/g;
+      for(const raw of rawLines){
+        const groups = raw.split('|');
+        const outGroups = [];
+        for(const group of groups){
+          const events = [];
+          let m;
+          while((m = tokenRe.exec(group)) !== null){
+            const tok = m[1];
+            if(tok === '_'){ events.push({type:'rest'}); continue; }
+            const letter = tok[0].toLowerCase();
+            const octm = /([+-]\d+)$/.exec(tok);
+            const octave = octm ? parseInt(octm[1],10) : 0; // relative to middle (0)
+            events.push({type:'note', letter, octave});
+          }
+          if(events.length) outGroups.push(events);
         }
-        x+=noteW;
+        if(outGroups.length) lines.push(outGroups);
       }
-    });
-  });
-  result.appendChild(canvas);
-  document.getElementById('downloadBtn').style.display='inline-block';
-});
+      return lines;
+    }
 
-document.getElementById('downloadBtn').addEventListener('click',()=>{
-  const canvas=document.querySelector('#result canvas');
-  if(!canvas) return;
-  const link=document.createElement('a');
-  link.download='notation.png';
-  link.href=canvas.toDataURL('image/png');
-  link.click();
-});
+    function estimateWidth(lines, spacing, marg){
+      let maxNotes = 0;
+      for(const groups of lines){
+        let count = 0;
+        for(const g of groups){ count += g.length; }
+        // add 1 gap for each bar (groups.length bars including trailing bar)
+        const bars = Math.max(0, groups.length); // trailing bar drawn at end as well
+        maxNotes = Math.max(maxNotes, count + bars*0.4); // minor extra for bar thickness
+      }
+      return Math.max(600, Math.round(marg*2 + maxNotes*spacing));
+    }
 
-function parseLine(line){
-  const groups = line.trim().split(/\s+/);
-  const elements = [];
-  groups.forEach((group,index)=>{
-    if(index>0) elements.push({type:'bar'});
-    const tokens = group.match(/[a-g](?:[+-]\d)?|_/gi) || [];
-    tokens.forEach(tok=>{
-      if(tok==='_') elements.push({type:'note',rest:true});
-      else elements.push({type:'note',number:noteMap[tok[0].toLowerCase()]});
+    function mk(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+    function renderNote(svg, cx, cy, radius, height, letter, color, highlightRadius) {
+      // Background circle (color-coded)
+      svg.circle(highlightRadius*2).center(cx, cy).fill(color).opacity(0.9);
+
+      // Foreground circle
+      svg.circle(radius*2).center(cx, cy).fill('white').stroke({color:'#000', width:2});
+      
+      // Letter
+      // letterEl.setAttribute('text-anchor','middle');
+      svg.text(letter.toUpperCase()).font({
+        family: 'system-ui,Segoe UI,Roboto,Arial',
+        size: radius*1.2,
+        fill: '#000'
+      }).center(cx, cy-radius*0.11).attr('alignment-baseline', 'middle');
+
+      // Note bar
+      svg.line(cx+radius, cy-height, cx+radius, cy).stroke({color:'#000', width:2});
+    }
+
+    function renderNoteHead(svg, cx, cy, radius, color, letter) {
+      // Background circle (color-coded)
+      svg.circle(radius*2).center(cx, cy).fill(color).opacity(0.9);
+
+      // Letter
+      svg.text(letter.toUpperCase()).font({
+        family: 'system-ui,Segoe UI,Roboto,Arial',
+        size: radius*1.4,
+        fill: 'white'
+      }).center(cx, cy-radius*0.12);
+      //.attr('text-anchor','middle')
+      //.attr('alignment-baseline', 'middle');
+    }
+
+    function renderStaff(svg, x, y, leftOffset, spacing, width, groupSize, groupCount) {
+      for (let lineNum=1; lineNum < 6; lineNum++) {
+        svg
+          .line(x, y + lineNum*spacing, x+width, y + lineNum*spacing)
+          .stroke({color:'#000', width:2});
+      }
+      svg
+        .line(x+leftOffset, y, x+leftOffset, y + 6*spacing)
+        .stroke({color:'#000', width:2});
+      
+      for (let g=0; g<groupCount; g++) {
+        const gx = x + leftOffset + (g+1)*groupSize;
+        svg
+          .line(gx, y+0.5*spacing, gx, y + 5.5*spacing)
+          .stroke({color:'#000', width:2, dasharray:'4,4'});
+      }
+    }
+
+    function renderRow(svg, x, y, leftOffset, rowHeight, noteSpacing, headerOffset, noteGroups) {
+      renderStaff(svg, x, y+headerOffset, leftOffset, rowHeight, 
+        noteSpacing*noteGroups.length*noteGroups[0].length,
+        noteSpacing*noteGroups[0].length, noteGroups.length);
+
+      for (let g=0; g<noteGroups.length; g++) {
+        const group = noteGroups[g];
+        const groupWidth = noteSpacing*group.length;
+        for (let n=0; n<group.length; n++) {
+          const note = group[n];
+          const cx = x + leftOffset + g*groupWidth + n*noteSpacing + noteSpacing/2;
+          const headCy = y + headerOffset/2;
+          renderNoteHead(svg, cx, headCy, 16, NOTE_COLORS[note] || '#bbb', note);
+          const noteCy = y + headerOffset + NOTE_POSITIONS[note]*rowHeight;
+          renderNote(svg, cx, noteCy, 10, rowHeight*2.5, note, NOTE_COLORS[note] || '#bbb', 25);
+        }
+      }
+
+
+    }
+
+    function renderSVG(){
+
+      
+      const lines = parseInput(els.input.value);
+      const spacing = parseFloat(els.spacing.value);
+      const r = parseFloat(els.radius.value);
+      const bgScale = parseFloat(els.bgScale.value);
+      const rowH = parseFloat(els.rowH.value);
+      const marg = parseFloat(els.marg.value);
+      const strokeW = parseFloat(els.strokeW.value);
+      const showNumbers = els.showNumbers.checked;
+      const showLetters = els.showLetters.checked;
+      const showBg = els.showBg.checked;
+      const showOctaves = els.showOctaves.checked;
+      const font = els.fontSel.value;
+
+      if(!lines.length){
+        els.preview.innerHTML = '<p style="color:#98a; padding:20px">Enter some notes to render…</p>';
+        return null;
+      }
+
+      //const note = renderNoteHead(16, NOTE_COLORS.c, '1');
+      //els.preview.innerHTML = '';
+      //els.preview.appendChild(note);
+      const parent = SVG()
+        //.addTo(els.preview)
+        //.viewbox(0,0,800,800)
+        .css({'background':'white'});
+      renderRow(parent, 0, 0, 10, 20, 60, 10, [['c','a'],['a+1','b+1'],['g','a']]);
+      renderRow(parent, 0, 200, 10, 20, 60, 10, [['c','a'],['a+1','b+1'],['g','a']]);
+      const sz = parent.bbox();
+      parent.viewbox(-10,-10,sz.width+10, sz.height+10);
+      parent.addTo(els.preview);
+      return parent;
+    }
+
+    function svgToBlob(svg){
+      const s = new XMLSerializer().serializeToString(svg);
+      return new Blob([s], {type:'image/svg+xml;charset=utf-8'});
+    }
+
+    function downloadBlob(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    }
+
+    async function exportPNG(){
+      const svg = renderSVG(); if(!svg) return;
+      const scale = parseInt(els.exportScale.value, 10) || 2;
+      const blob = svgToBlob(svg);
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth * scale; canvas.height = img.naturalHeight * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(scale,0,0,scale,0,0);
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(b=>{ if(!b) return; downloadBlob(b, 'notation.png'); URL.revokeObjectURL(url); }, 'image/png');
+    }
+
+    function exportSVG(){
+      const svg = renderSVG(); if(!svg) return;
+      downloadBlob(svgToBlob(svg), 'notation.svg');
+    }
+
+    function printOut(){
+      const svg = renderSVG(); if(!svg) return;
+      const w = window.open('', '_blank');
+      const s = new XMLSerializer().serializeToString(svg);
+      w.document.write(`<!DOCTYPE html><html><head><title>Print Notation</title>
+        <style>@page{size:auto; margin:10mm} body{margin:0} .wrap{display:flex; justify-content:center; padding:10mm}</style>
+      </head><body><div class="wrap">${s}</div></body></html>`);
+      w.document.close();
+      w.focus(); w.print();
+    }
+
+    // Hook up UI
+    els.renderBtn.addEventListener('click', renderSVG);
+    els.pngBtn.addEventListener('click', exportPNG);
+    els.svgBtn.addEventListener('click', exportSVG);
+    els.printBtn.addEventListener('click', printOut);
+    [els.spacing, els.radius, els.bgScale, els.rowH, els.marg, els.strokeW, els.fontSel, els.showNumbers, els.showLetters, els.showBg, els.showOctaves].forEach(el=>{
+      el.addEventListener('input', renderSVG);
     });
-  });
-  return elements;
-}
-</script>
+
+    // Init
+    setExample();
+    buildLegend();
+    renderSVG();
+  </script>
 </body>
 </html>
