@@ -68,74 +68,78 @@
       <p style="color:var(--muted); font-size:13px; margin:6px 0 10px">Each line → one staff row. Separate groups with spaces (adds vertical bars). Notes: <strong>a–g</strong>, optional octave like <strong>a+1</strong> or <strong>e-1</strong>. Use <strong>_</strong> for a rest. Example shown below.</p>
       <textarea id="input"></textarea>
       <div class="controls">
-        <h2 style="margin-top:10px">Layout & Style</h2>
-        
-        <!-- Note Section -->
-        <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Note</h3>
-        <label>Note spacing (px)
-          <input type="number" id="noteSpacing" value="64" min="28" max="160" step="2" />
-        </label>
-        <label>Note radius (px)
-          <input type="number" id="noteRadius" value="10" min="8" max="36" />
-        </label>
-        <label>Background circle radius
-          <input type="number" id="bgRadius" value="22" min="8" max="64" />
-        </label>
-        <label>Note bar height (px)
-          <input type="number" id="noteBarHeight" value="45" min="10" max="80" />
-        </label>
-        <label title="Adds a tiny superscript ± for octave offsets like a+1 or e-1"><span>Show octave marks (±)</span>
-          <input type="checkbox" id="showOctaves" />
-        </label>
-        <label>Font
-          <select id="fontSel">
-            <option value="system-ui,Segoe UI,Roboto,Arial">System UI</option>
-            <option value="'Gill Sans', 'Trebuchet MS', system-ui">Humanist</option>
-            <option value="'Comic Sans MS', 'Comic Sans', system-ui">Comic Sans (fun)</option>
-            <option value="'Times New Roman', Times, serif">Times</option>
-            <option value="'Courier New', Courier, monospace">Monospace</option>
-          </select>
-        </label>
+        <details id="layoutStyleDetails" style="margin-bottom:16px" closed>
+          <summary style="font-size:16px; font-weight:600; color:var(--accent); cursor:pointer;">Layout & Style</summary>
+          <!-- Note Section -->
+          <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Note</h3>
+          <label>Note spacing (px)
+            <input type="number" id="noteSpacing" value="64" min="28" max="160" step="2" />
+          </label>
+          <label>Note radius (px)
+            <input type="number" id="noteRadius" value="10" min="8" max="36" />
+          </label>
+          <label>Background circle radius
+            <input type="number" id="bgRadius" value="22" min="8" max="64" />
+          </label>
+          <label>Note bar height (px)
+            <input type="number" id="noteBarHeight" value="45" min="10" max="80" />
+          </label>
+          <label title="Adds a tiny superscript ± for octave offsets like a+1 or e-1"><span>Show octave marks (±)</span>
+            <input type="checkbox" id="showOctaves" />
+          </label>
+          <label>Font
+            <select id="fontSel">
+              <option value="system-ui,Segoe UI,Roboto,Arial">System UI</option>
+              <option value="'Gill Sans', 'Trebuchet MS', system-ui">Humanist</option>
+              <option value="'Comic Sans MS', 'Comic Sans', system-ui">Comic Sans (fun)</option>
+              <option value="'Times New Roman', Times, serif">Times</option>
+              <option value="'Courier New', Courier, monospace">Monospace</option>
+            </select>
+          </label>
 
-        <!-- Note Header Section -->
-        <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Note Header</h3>
-        <label>Note header radius (px)
-          <input type="number" id="noteHeaderRadius" value="14" min="8" max="36" />
-        </label>
+          <!-- Note Header Section -->
+          <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Note Header</h3>
+          <label>Note header radius (px)
+            <input type="number" id="noteHeaderRadius" value="14" min="8" max="36" />
+          </label>
 
-        <!-- Staff Section -->
-        <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Staff</h3>
-        <label>Row height (px)
-          <input type="number" id="rowH" value="20" min="10" max="100" />
-        </label>
-        <label>Staff left offset (px)
-          <input type="number" id="staffLeftOffset" value="10" min="0" max="100" />
-        </label>
-        <label>Staff divider width (px)
-          <input type="number" id="staffDividerWidth" value="20" min="0" max="100" />
-        </label>
-        <label>Staff header offset (px)
-          <input type="number" id="staffHeaderOffset" value="10" min="0" max="100" />
-        </label>
+          <!-- Staff Section -->
+          <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Staff</h3>
+          <label>Row height (px)
+            <input type="number" id="rowH" value="20" min="10" max="100" />
+          </label>
+          <label>Staff left offset (px)
+            <input type="number" id="staffLeftOffset" value="10" min="0" max="100" />
+          </label>
+          <label>Staff divider width (px)
+            <input type="number" id="staffDividerWidth" value="20" min="0" max="100" />
+          </label>
+          <label>Staff header offset (px)
+            <input type="number" id="staffHeaderOffset" value="10" min="0" max="100" />
+          </label>
 
-        <!-- Song Section -->
-        <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Song</h3>
-        <label>Line spacing (px)
-          <input type="number" id="lineSpacing" value="40" min="0" max="100" />
-        </label>
-        <label>Song name font size (px)
-          <input type="number" id="songNameFontSize" value="24" min="10" max="100" />
-        </label>
+          <!-- Song Section -->
+          <h3 style="margin:12px 0 6px; font-size:14px; color:var(--accent)">Song</h3>
+          <label>Line spacing (px)
+            <input type="number" id="lineSpacing" value="40" min="0" max="100" />
+          </label>
+          <label>Song name font size (px)
+            <input type="number" id="songNameFontSize" value="24" min="10" max="100" />
+          </label>
+        </details>
 
-        <!-- Export Section -->
-        <div class="row">
-          <label style="grid-column:1/-1">Export scale (for PNG)</label>
-          <input type="range" id="exportScale" min="1" max="4" step="1" value="2" />
-        </div>
-        <div class="btns">
-          <button id="renderBtn">Render</button>
-          <button id="pngBtn" class="secondary">Export PNG</button>
-          <button id="svgBtn" class="secondary">Export SVG</button>
+        <!-- Rendering & Export Section -->
+        <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border)">
+          <h2 style="font-size:16px; margin-bottom:8px;">Rendering & Export</h2>
+          <div class="row">
+            <label style="grid-column:1/-1">Export scale (for PNG)</label>
+            <input type="range" id="exportScale" min="1" max="4" step="1" value="2" />
+          </div>
+          <div class="btns">
+            <button id="renderBtn">Render</button>
+            <button id="pngBtn" class="secondary">Export PNG</button>
+            <button id="svgBtn" class="secondary">Export SVG</button>
+          </div>
         </div>
       </div>
 
@@ -462,7 +466,7 @@
       parent.viewbox(-10,-10,sz.width+10, sz.height+10);
       els.preview.innerHTML = '';
       parent.addTo(els.preview);
-      return parent;
+      return parent.node;
     }
 
     function svgToBlob(svg){
