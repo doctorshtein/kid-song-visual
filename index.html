@@ -484,10 +484,10 @@
         currentY = config.song.lineSpacing + parent.bbox().height;
       }
       const sz = parent.bbox();
-      parent.viewbox(-10,-10,sz.width+10, sz.height+10);
+      parent.viewbox(-10,-10,sz.width+20, sz.height+20);
       els.preview.innerHTML = '';
       parent.addTo(els.preview);
-      return parent.node;
+      return parent;
     }
 
     function svgToBlob(svg){
@@ -504,32 +504,26 @@
     async function exportPNG(){
       const svg = renderSVG(); if(!svg) return;
       const scale = parseInt(els.exportScale.value, 10) || 2;
-      const blob = svgToBlob(svg);
+      const blob = svgToBlob(svg.node);
       const url = URL.createObjectURL(blob);
       const img = new Image();
+
+      const vb = svg.bbox();
+
       await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
       const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth * scale; canvas.height = img.naturalHeight * scale;
+      canvas.width = (vb.width+20) * scale;
+      canvas.height = (vb.height+20) * scale;
       const ctx = canvas.getContext('2d');
       ctx.setTransform(scale,0,0,scale,0,0);
-      ctx.drawImage(img, 0, 0);
+      // Draw image at correct offset
+      ctx.drawImage(img, 10, 10, vb.width, vb.height);
       canvas.toBlob(b=>{ if(!b) return; downloadBlob(b, 'notation.png'); URL.revokeObjectURL(url); }, 'image/png');
     }
 
     function exportSVG(){
       const svg = renderSVG(); if(!svg) return;
-      downloadBlob(svgToBlob(svg), 'notation.svg');
-    }
-
-    function printOut(){
-      const svg = renderSVG(); if(!svg) return;
-      const w = window.open('', '_blank');
-      const s = new XMLSerializer().serializeToString(svg);
-      w.document.write(`<!DOCTYPE html><html><head><title>Print Notation</title>
-        <style>@page{size:auto; margin:10mm} body{margin:0} .wrap{display:flex; justify-content:center; padding:10mm}</style>
-      </head><body><div class="wrap">${s}</div></body></html>`);
-      w.document.close();
-      w.focus(); w.print();
+      downloadBlob(svgToBlob(svg.node), 'notation.svg');
     }
 
     // Hook up UI
