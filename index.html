@@ -209,6 +209,14 @@
       '1':  { a: '6', b: '7', c: '8', d: '9', e: '10', f: '11', g: '12'}, // octave +1
     }
 
+    const NOTE_ADDED_LINES = {
+      '0': {
+        'a': [0, -1],
+        'b': [-0.5],
+        'c': [0]
+      }
+    }
+
     function getNoteColor(note){
       if(note.type !== 'note') return '#888';
       return NOTE_COLORS[note.letter] || '#bbb';
@@ -230,6 +238,12 @@
       if(note.type !== 'note') return '';
       const oct = note.octave ? (note.octave > 1 ? '1' : (note.octave < -1 ? '-1' : String(note.octave))) : '0';
       return note.letter.toUpperCase() + (showOctaves && note.octave !== 0 ? (note.octave > 0 ? '+' : '') + note.octave : '');
+    }
+
+    function getNoteAddedLines(note) {
+      if (note.type !== 'note') return [];
+      const oct = note.octave ? (note.octave > 1 ? '1' : (note.octave < -1 ? '-1' : String(note.octave))) : '0';
+      return (NOTE_ADDED_LINES[oct]||{})[note.letter] || [];
     }
 
     const els = {
@@ -335,6 +349,13 @@
 
       // Background circle (color-coded)
       svg.circle(highlightRadius*2).center(cx, cy).fill(color).opacity(0.9);
+
+      // if a,b,or c on octave 0 - add bg lines
+      const addedLines = getNoteAddedLines(note);
+      addedLines.forEach(posOffset => {
+        const lineY = cy + posOffset * config.staff.rowHeight;
+        svg.line(cx - highlightRadius, lineY, cx + highlightRadius, lineY).stroke({ color: '#555', width: 2 });
+      });
 
       // Foreground circle
       svg.circle(radius*2).center(cx, cy).fill('white').stroke({color:'#000', width:2});
