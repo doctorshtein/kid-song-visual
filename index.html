@@ -70,13 +70,28 @@
           <input type="number" id="noteSpacing" value="64" min="28" max="160" step="2" />
         </label>
         <label>Note radius (px)
-          <input type="number" id="noteRadius" value="16" min="8" max="36" />
+          <input type="number" id="noteRadius" value="10" min="8" max="36" />
+        </label>
+        <label>Note bar height (px)
+          <input type="number" id="noteBarHeight" value="45" min="10" max="80" />
         </label>
         <label>Background circle radius ×
-          <input type="number" id="bgRadius" value="32" min="8" max="64" />
+          <input type="number" id="bgRadius" value="22" min="8" max="64" />
+        </label>
+        <label>Note header radius (px)
+          <input type="number" id="noteHeaderRadius" value="14" min="8" max="36" />
         </label>
         <label>Row height (px)
           <input type="number" id="rowH" value="20" min="10" max="100" />
+        </label>
+        <label>Staff left offset (px)
+          <input type="number" id="staffLeftOffset" value="10" min="0" max="100" />
+        </label>
+        <label>Staff divider width (px)
+          <input type="number" id="staffDividerWidth" value="20" min="0" max="100" />
+        </label>
+        <label>Staff header offset (px)
+          <input type="number" id="staffHeaderOffset" value="10" min="0" max="100" />
         </label>
         <label>Font
           <select id="fontSel">
@@ -94,7 +109,6 @@
           <label style="grid-column:1/-1">Export scale (for PNG)</label>
           <input type="range" id="exportScale" min="1" max="4" step="1" value="2" />
         </div>
-        
         <div class="btns">
           <button id="renderBtn">Render</button>
           <button id="pngBtn" class="secondary">Export PNG</button>
@@ -192,19 +206,24 @@
     }
 
     const els = {
-      input: document.getElementById('input'),
-      spacing: document.getElementById('noteSpacing'),
-      radius: document.getElementById('noteRadius'),
-      bgRadius: document.getElementById('bgRadius'),
-      rowH: document.getElementById('rowH'),
-      fontSel: document.getElementById('fontSel'),
-      showOctaves: document.getElementById('showOctaves'),
-      renderBtn: document.getElementById('renderBtn'),
-      pngBtn: document.getElementById('pngBtn'),
-      svgBtn: document.getElementById('svgBtn'),
-      exportScale: document.getElementById('exportScale'),
-      preview: document.getElementById('previewBox'),
-      legend: document.getElementById('legend')
+  input: document.getElementById('input'),
+  spacing: document.getElementById('noteSpacing'),
+  radius: document.getElementById('noteRadius'),
+  barHeight: document.getElementById('noteBarHeight'),
+  bgRadius: document.getElementById('bgRadius'),
+  noteHeaderRadius: document.getElementById('noteHeaderRadius'),
+  rowH: document.getElementById('rowH'),
+  staffLeftOffset: document.getElementById('staffLeftOffset'),
+  staffDividerWidth: document.getElementById('staffDividerWidth'),
+  staffHeaderOffset: document.getElementById('staffHeaderOffset'),
+  fontSel: document.getElementById('fontSel'),
+  showOctaves: document.getElementById('showOctaves'),
+  renderBtn: document.getElementById('renderBtn'),
+  pngBtn: document.getElementById('pngBtn'),
+  svgBtn: document.getElementById('svgBtn'),
+  exportScale: document.getElementById('exportScale'),
+  preview: document.getElementById('previewBox'),
+  legend: document.getElementById('legend')
     };
 
     function getRenderingConfig()
@@ -213,19 +232,19 @@
         note: {
           radius: parseFloat(els.radius.value),
           highlightRadius: parseFloat(els.bgRadius.value),
-          barHeight: parseFloat(els.radius.value) * 2.5,
+          barHeight: parseFloat(els.barHeight.value),
           font: els.fontSel.value,
           showOctaves: els.showOctaves.checked
         },
         noteHeader: {
-          radius: parseFloat(els.radius.value),
+          radius: parseFloat(els.noteHeaderRadius.value),
         },
         staff: {
-          leftOffset: 10,
-          dividerWidth: 20,
+          leftOffset: parseFloat(els.staffLeftOffset.value),
+          dividerWidth: parseFloat(els.staffDividerWidth.value),
           noteSpacing: parseFloat(els.spacing.value),
           rowHeight: parseFloat(els.rowH.value),
-          headerOffset: 10
+          headerOffset: parseFloat(els.staffHeaderOffset.value)
         }
       };
     }
@@ -452,6 +471,10 @@
     els.pngBtn.addEventListener('click', exportPNG);
     els.svgBtn.addEventListener('click', exportSVG);
     [els.spacing, els.radius, els.bgRadius, els.rowH, els.fontSel, els.showOctaves].forEach(el=>{
+      el.addEventListener('input', renderSVG);
+    });
+    // Add listeners for new controls
+    [els.barHeight, els.noteHeaderRadius, els.staffLeftOffset, els.staffDividerWidth, els.staffHeaderOffset].forEach(el=>{
       el.addEventListener('input', renderSVG);
     });
 
