@@ -133,24 +133,63 @@
     };
 
     const NOTE_POSITIONS = {
-      'a': 7,
-      'b': 6.5,
-      'c': 6,
-      'd': 5.5,
-      'e': 5,
-      'f': 4.5,
-      'g': 4,
-      'a+1': 3.5,
-      'b+1': 3,
-      'c+1': 2.5,
-      'd+1': 2,
-      'e+1': 1.5,
-      'f+1': 1,
-      'g+1': 0.5,
-      'a+2': 0,
+      '0': {
+        'a': 7,
+        'b': 6.5,
+        'c': 6,
+        'd': 5.5,
+        'e': 5,
+        'f': 4.5,
+        'g': 4,
+      },
+      '1': {
+        'a': 3.5,
+        'b': 3,
+        'c': 2.5,
+        'd': 2,
+        'e': 1.5,
+        'f': 1,
+        'g': 0.5
+      },
+      '-1': {
+        'a': 10.5,
+        'b': 10,
+        'c': 9.5,
+        'd': 9,
+        'e': 8.5,
+        'f': 8,
+        'g': 7.5
+      }
     };
 
-    const DEGREE_MAP = { c: '1', d: '2', e: '3', f: '4', g: '5', a: '6', b: '7' };
+    const NOTE_NUMBERS = {
+      '-1': { a: '-9', b: '-8', c: '-7', d: '-6', e: '-5', f: '-4', g: '-3'}, // octave -1
+      '0':  { a: '-2', b: '-1', c: '1', d: '2', e: '3', f: '4', g: '5'}, // octave 0 = middle
+      '1':  { a: '6', b: '7', c: '8', d: '9', e: '10', f: '11', g: '12'}, // octave +1
+    }
+
+    function getNoteColor(note){
+      if(note.type !== 'note') return '#888';
+      return NOTE_COLORS[note.letter] || '#bbb';
+    }
+
+    function getNotePosition(note){
+      if(note.type !== 'note') return null;
+      const oct = note.octave ? (note.octave > 1 ? '1' : (note.octave < -1 ? '-1' : String(note.octave))) : '0';
+      return NOTE_POSITIONS[oct][note.letter] || null;
+    }
+
+    function getNoteHeaderText(note){
+      if(note.type !== 'note') return '';
+      const oct = note.octave ? (note.octave > 1 ? '1' : (note.octave < -1 ? '-1' : String(note.octave))) : '0';
+      return (NOTE_NUMBERS[oct][note.letter] || '');
+    }
+
+    function getNoteDisplayText(note, showOctaves){
+      if(note.type !== 'note') return '';
+      const oct = note.octave ? (note.octave > 1 ? '1' : (note.octave < -1 ? '-1' : String(note.octave))) : '0';
+      return note.letter.toUpperCase() + (showOctaves && note.octave !== 0 ? (note.octave > 0 ? '+' : '') + note.octave : '');
+    }
 
     const els = {
       input: document.getElementById('input'),
@@ -245,9 +284,14 @@
 
     function mk(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
 
-    function renderNote(svg, cx, cy, config, letter, color) {
+    function renderNote(svg, cx, cy, config, note) {
+      if (note.type !== 'note') {
+        return;
+      }
       const radius = config.note.radius;
       const highlightRadius = config.note.highlightRadius;
+      const color = getNoteColor(note);
+      const letter = getNoteDisplayText(note, config.note.showOctaves);
 
       // Background circle (color-coded)
       svg.circle(highlightRadius*2).center(cx, cy).fill(color).opacity(0.9);
@@ -267,7 +311,12 @@
       svg.line(cx+radius, cy-config.note.barHeight, cx+radius, cy).stroke({color:'#000', width:2});
     }
 
-    function renderNoteHead(svg, cx, cy, config, color, letter) {
+    function renderNoteHead(svg, cx, cy, config, note) {
+      if (note.type !== 'note') {
+        return;
+      }
+      const color = getNoteColor(note);
+      const letter = getNoteHeaderText(note);
       const radius = config.noteHeader.radius;
       // Background circle (color-coded)
       svg.circle(radius*2).center(cx, cy).fill(color).opacity(0.9);
@@ -317,26 +366,19 @@
         const groupWidth = noteSpacing*group.length;
         for (let n=0; n<group.length; n++) {
           const note = group[n];
+          if (note.type !== 'note') continue;
           const cx = x + leftOffset + g*groupWidth + g*config.staff.dividerWidth + n*noteSpacing + noteSpacing/2;
           const headCy = y + headerOffset/2;
-          renderNoteHead(svg, cx, headCy, config, NOTE_COLORS[note] || '#bbb', note);
-          const noteCy = y + headerOffset + NOTE_POSITIONS[note]*config.staff.rowHeight;
-          renderNote(svg, cx, noteCy, config, note, NOTE_COLORS[note] || '#bbb');
+          renderNoteHead(svg, cx, headCy, config, note);
+          const notePos = getNotePosition(note);
+          const noteCy = y + headerOffset + notePos*config.staff.rowHeight;
+          renderNote(svg, cx, noteCy, config, note, );
         }
       }
     }
 
     function renderSVG(){
-
-      
       const lines = parseInput(els.input.value);
-      const spacing = parseFloat(els.spacing.value);
-      const r = parseFloat(els.radius.value);
-      const bgRadius = parseFloat(els.bgRadius.value);
-      const rowH = parseFloat(els.rowH.value);
-      const showOctaves = els.showOctaves.checked;
-      const font = els.fontSel.value;
-
       if(!lines.length){
         els.preview.innerHTML = '<p style="color:#98a; padding:20px">Enter some notes to render…</p>';
         return null;
@@ -351,10 +393,14 @@
         //.addTo(els.preview)
         //.viewbox(0,0,800,800)
         .css({'background':'white'});
-      renderRow(parent, 0, 0, config, [['c','a'],['a+1','b+1'],['g','a']]);
-      renderRow(parent, 0, 200, config, [['c','a'],['a+1','b+1'],['g','a']]);
+
+      for (let i=0; i<lines.length; i++) {
+        const line = lines[i];
+        renderRow(parent, 0, i*(config.staff.rowHeight*8 + config.staff.headerOffset), config, line);
+      }
       const sz = parent.bbox();
       parent.viewbox(-10,-10,sz.width+10, sz.height+10);
+      els.preview.innerHTML = '';
       parent.addTo(els.preview);
       return parent;
     }
