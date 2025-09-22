@@ -61,6 +61,13 @@
   <main>
     <section class="left card">
       <h2>Song input</h2>
+      <!-- Song selection dropdown -->
+      <label style="display:block; margin-bottom:8px; font-size:13px; color:var(--muted)">
+        Choose a song
+        <select id="songSelect" style="width:100%; margin-top:4px; padding:8px; border-radius:8px; border:1px solid var(--border); background:#0e0e16; color:var(--ink);">
+          <!-- Options will be populated by JS -->
+        </select>
+      </label>
       <label style="display:block; margin-bottom:8px; font-size:13px; color:var(--muted)">
         Song name
         <input type="text" id="songName" style="width:100%; margin-top:4px; padding:8px; border-radius:8px; border:1px solid var(--border); background:#0e0e16; color:var(--ink);" placeholder="Enter song name..." />
@@ -267,8 +274,41 @@
       legend: document.getElementById('legend'),
       songName: document.getElementById('songName'),
       lineSpacing: document.getElementById('lineSpacing'),
-      songNameFontSize: document.getElementById('songNameFontSize')
+      songNameFontSize: document.getElementById('songNameFontSize'),
+      songSelect: document.getElementById('songSelect')
     };
+
+    // Pre-programmed songs
+    const SONGS = [
+      { name: 'Custom', notes: '' },
+      { name: 'Twinkle Twinkle Little Star', notes: `cc|gg|a+1a+1|g_\nff|ee|dd|c_` },
+      { name: 'Old MacDonald', notes: `_ggg|deed\nb+1b+1a+1a+1|g___\ndggg|deed\nb+1b+1a+1a+1|g___\nddggg|ddggg` },
+      { name: 'Гуси', notes: `fedc|g_g_\nfedc|g_g_\nfa+1a+1f|egge\ndefd|c_c_` },
+      { name: 'Калыханка', notes: `cgg_|cgg_\nc+1a+1fd|eged\ncgg_|fc+1c+1_\ndefg|a+1b+1a+1g\nga+1b+1g|c+1a+1f_\nfga+1f|b+1ge_\ndefd|efge\nfga+1f|ga+1b+1_\ngb+1a+1_|fa+1g_\negff|edc_\ngb+1a+1_|fa+1g_\negff|edc_` },
+      // Add more songs here
+    ];
+
+    // Populate song dropdown
+    function populateSongDropdown() {
+      els.songSelect.innerHTML = '';
+      SONGS.forEach((song, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = song.name;
+        els.songSelect.appendChild(opt);
+      });
+    }
+
+    // Handle song selection
+    els.songSelect.addEventListener('change', function() {
+      const idx = parseInt(this.value, 10);
+      const song = SONGS[idx];
+      if (song) {
+        els.songName.value = song.name === 'Custom' ? '' : song.name;
+        els.input.value = song.notes;
+        renderSVG();
+      }
+    });
 
     function getRenderingConfig()
     {
@@ -298,8 +338,10 @@
     }
 
     function setExample(){
-      els.songName.value = 'Twinkle Twinkle Little Star';
-      els.input.value = `cc|gg|a+1a+1|g_\nff|ee|dd|c_`;
+      // Instead of setting example, select Twinkle Twinkle by default
+      els.songSelect.value = '1';
+      els.songName.value = SONGS[1].name;
+      els.input.value = SONGS[1].notes;
     }
 
     function buildLegend(){
@@ -539,6 +581,7 @@
     });
 
     // Init
+    populateSongDropdown();
     setExample();
     buildLegend();
     renderSVG();
